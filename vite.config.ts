@@ -14,4 +14,14 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
+      }
+    }
+  }
 });
