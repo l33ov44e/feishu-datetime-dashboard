@@ -22,6 +22,10 @@ export default defineConfig({
       input: {
         main: 'public/index.html'
       }
-    }
+    },
+    emptyOutDir: true
+  },
+  resolve: {
+    preserveSymlinks: true
   }
 });
