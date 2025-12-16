@@ -1,68 +1,82 @@
 .main {
-  height: 100%;
   display: flex;
+  box-sizing: border-box;
+  min-height: 100vh;
+}
+
+.main-config {
+  border-top: var(--divider) 0.5px solid;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 20px;
+}
+
+.datetime-display {
+  text-align: center;
+  
+  .date-text {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .time-text {
+    font-size: 2rem;
+    color: #666;
+  }
+
+  .timezone-text {
+    font-size: 1rem;
+    color: #999;
+    margin-top: 10px;
+  }
+}
+
+.config-panel {
+  width: 340px;
+  flex: none;
+  display: flex;
+  justify-content: flex-start;
+  gap: 20px;
   flex-direction: column;
+  border-left: var(--divider) 0.5px solid;
+  padding: 20px;
+  box-sizing: border-box;
+  background: var(--semi-color-bg-1);
 
-  .content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+  .form {
+    flex-grow: 1;
 
-    .datetime-display {
-      text-align: center;
-      
-      .date-text {
-        font-size: 3rem;
-        font-weight: bold;
-        margin-bottom: 10px;
+    .form-item {
+      margin-bottom: 16px;
+
+      .label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
       }
 
-      .time-text {
-        font-size: 2rem;
-        color: #666;
-      }
-
-      .timezone-text {
-        font-size: 1rem;
-        color: #999;
-        margin-top: 10px;
+      .input {
+        width: 100%;
       }
     }
   }
 
-  &.main-config {
-    .content {
-      align-items: stretch;
-    }
+  .btn {
+    align-self: flex-end;
+    min-width: 80px;
   }
+}
 
-  .config-panel {
-    border-top: 1px solid var(--semi-color-border);
-    padding: 20px;
-    background: var(--semi-color-bg-1);
-
-    .form {
-      margin-bottom: 20px;
-
-      .form-item {
-        margin-bottom: 16px;
-
-        .label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 600;
-        }
-
-        .input {
-          width: 100%;
-        }
-      }
-    }
-
-    .btn {
-      width: 100%;
-    }
-  }
+.label-checkbox {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
 }

@@ -164,7 +164,7 @@ function App() {
             <p>{error}</p>
             <p>这可能是因为插件未在飞书环境中运行。</p>
           </div>
-        ) : !isConfig ? (
+        ) : (
           <div className="datetime-display">
             <div 
               className="date-text" 
@@ -175,25 +175,6 @@ function App() {
             <div className="timezone-text">
               {config.timeZone}
             </div>
-          </div>
-        ) : (
-          <div style={{ width: '100%', maxWidth: 600, margin: '0 auto' }}>
-            <Space vertical align='start' style={{ width: '100%' }}>
-              <div 
-                className="datetime-display" 
-                style={{ padding: 20, border: '1px dashed #ccc', marginBottom: 20 }}
-              >
-                <div 
-                  className="date-text" 
-                  style={{ fontSize: `${config.fontSize}px` }}
-                >
-                  {formatDateTime()}
-                </div>
-                <div className="timezone-text">
-                  {config.timeZone}
-                </div>
-              </div>
-            </Space>
           </div>
         )}
       </div>
@@ -216,7 +197,13 @@ function App() {
             
             <div className="form-item">
               <Form.Label className="label">
-                显示设置
+                <div className='label-checkbox'>
+                  显示设置
+                  <Switch
+                    checked={config.showDate}
+                    onChange={(checked) => setConfig({...config, showDate: checked})}
+                  />
+                </div>
               </Form.Label>
               <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
                 <Switch
