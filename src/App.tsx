@@ -7,16 +7,16 @@ import "./App.scss";
 import classnames from "classnames";
 import { debounce } from "lodash";
 
-// 常用时区列表
+// 常用时区列表 - 使用中文标签
 const TIME_ZONES = [
-  { value: 'UTC', label: 'UTC' },
-  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (GMT+8)' },
-  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (GMT+9)' },
-  { value: 'Asia/Seoul', label: 'Asia/Seoul (GMT+9)' },
-  { value: 'America/New_York', label: 'America/New_York (GMT-5/-4)' },
-  { value: 'America/Los_Angeles', label: 'America/Los_Angeles (GMT-8/-7)' },
-  { value: 'Europe/London', label: 'Europe/London (GMT+0/+1)' },
-  { value: 'Europe/Paris', label: 'Europe/Paris (GMT+1/+2)' },
+  { value: 'UTC', label: '协调世界时 (UTC)' },
+  { value: 'Asia/Shanghai', label: '中国标准时间 (GMT+8)' },
+  { value: 'Asia/Tokyo', label: '日本时间 (GMT+9)' },
+  { value: 'Asia/Seoul', label: '韩国标准时间 (GMT+9)' },
+  { value: 'America/New_York', label: '纽约时间 (GMT-5/-4)' },
+  { value: 'America/Los_Angeles', label: '洛杉矶时间 (GMT-8/-7)' },
+  { value: 'Europe/London', label: '伦敦时间 (GMT+0/+1)' },
+  { value: 'Europe/Paris', label: '巴黎时间 (GMT+1/+2)' },
 ];
 
 // 默认配置
@@ -27,6 +27,9 @@ const DEFAULT_CONFIG = {
   dateFormat: 'YYYY-MM-DD',
   timeFormat: 'HH:mm:ss',
   fontSize: 24,
+  fontFamily: 'Arial, sans-serif',
+  fontColor: '#000000',
+  showTimeZone: true, // 添加时区显示开关
 };
 
 interface IDateTimeConfig {
@@ -36,6 +39,9 @@ interface IDateTimeConfig {
   dateFormat: string;
   timeFormat: string;
   fontSize: number;
+  fontFamily: string;
+  fontColor: string;
+  showTimeZone: boolean; // 添加时区显示开关
 }
 
 function App() {
@@ -168,13 +174,18 @@ function App() {
           <div className="datetime-display">
             <div 
               className="date-text" 
-              style={{ fontSize: `${config.fontSize}px` }}
+              style={{ 
+                fontSize: `${config.fontSize}px`,
+                color: config.fontColor
+              }}
             >
               {formatDateTime()}
             </div>
-            <div className="timezone-text">
-              {config.timeZone}
-            </div>
+            {config.showTimeZone && (
+              <div className="timezone-text">
+                {config.timeZone}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -197,27 +208,30 @@ function App() {
             
             <div className="form-item">
               <Form.Label className="label">
-                <div className='label-checkbox'>
-                  显示设置
+                显示设置
+              </Form.Label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>日期</span>
                   <Switch
                     checked={config.showDate}
                     onChange={(checked) => setConfig({...config, showDate: checked})}
                   />
                 </div>
-              </Form.Label>
-              <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-                <Switch
-                  checked={config.showDate}
-                  onChange={(checked) => setConfig({...config, showDate: checked})}
-                  checkedText="显示日期"
-                  uncheckedText="隐藏日期"
-                />
-                <Switch
-                  checked={config.showTime}
-                  onChange={(checked) => setConfig({...config, showTime: checked})}
-                  checkedText="显示时间"
-                  uncheckedText="隐藏时间"
-                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>时间</span>
+                  <Switch
+                    checked={config.showTime}
+                    onChange={(checked) => setConfig({...config, showTime: checked})}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>时区</span>
+                  <Switch
+                    checked={config.showTimeZone}
+                    onChange={(checked) => setConfig({...config, showTimeZone: checked})}
+                  />
+                </div>
               </div>
             </div>
             
@@ -231,10 +245,10 @@ function App() {
                   onChange={(value) => setConfig({...config, dateFormat: value as string})}
                   className="input"
                   optionList={[
-                    { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                    { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                    { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
-                    { value: 'MMM DD, YYYY', label: 'MMM DD, YYYY' },
+                    { value: 'YYYY-MM-DD', label: '年-月-日 (YYYY-MM-DD)' },
+                    { value: 'MM/DD/YYYY', label: '月/日/年 (MM/DD/YYYY)' },
+                    { value: 'DD/MM/YYYY', label: '日/月/年 (DD/MM/YYYY)' },
+                    { value: 'MMM DD, YYYY', label: '月份 日, 年 (MMM DD, YYYY)' },
                   ]}
                 />
               </div>
@@ -272,6 +286,21 @@ function App() {
                   style={{ flex: 1 }}
                 />
                 <span>{config.fontSize}px</span>
+              </div>
+            </div>
+            
+            <div className="form-item">
+              <Form.Label className="label">
+                字体颜色
+              </Form.Label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <input
+                  type="color"
+                  value={config.fontColor}
+                  onChange={(e) => setConfig({...config, fontColor: e.target.value})}
+                  style={{ width: '100%' }}
+                />
+                <span>{config.fontColor}</span>
               </div>
             </div>
           </Form>

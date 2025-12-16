@@ -80,3 +80,12 @@
   align-items: center;
   justify-content: space-between;
 }
+
+// 添加新的开关样式以解决文字显示不全问题
+.semi-switch-checked .semi-switch-inner {
+  min-width: 40px; // 增加开关内部空间以适应文字
+}
+
+.semi-switch-inner {
+  min-width: 40px; // 确保开关有足够的宽度显示文字
+}
