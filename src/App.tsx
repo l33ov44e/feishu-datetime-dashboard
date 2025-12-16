@@ -43,10 +43,18 @@ function App() {
 
   const [config, setConfig] = useState<IDateTimeConfig>(DEFAULT_CONFIG);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
 
-  const isCreate = dashboard.state === DashboardState.Create;
-  /** 是否配置模式下 */
-  const isConfig = dashboard.state === DashboardState.Config || isCreate;
+  let isCreate = false;
+  let isConfig = false;
+  
+  try {
+    isCreate = dashboard.state === DashboardState.Create;
+    /** 是否配置模式下 */
+    isConfig = dashboard.state === DashboardState.Config || isCreate;
+  } catch (e) {
+    setError('无法访问飞书仪表盘API: ' + (e instanceof Error ? e.message : String(e)));
+  }
 
   // 移除了 useTranslation 因为我们没有配置 i18n
 
@@ -57,7 +65,11 @@ function App() {
     }
   };
 
-  useConfig(updateConfig);
+  try {
+    useConfig(updateConfig);
+  } catch (e) {
+    setError(prev => prev || '配置钩子错误: ' + (e instanceof Error ? e.message : String(e)));
+  }
 
   // 更新时钟
   useEffect(() => {
@@ -146,7 +158,13 @@ function App() {
   return (
     <main style={{backgroundColor: bgColor}} className={classnames({"main-config": isConfig, main: true})}>
       <div className="content">
-        {!isConfig ? (
+        {error ? (
+          <div style={{ padding: 20, color: 'red' }}>
+            <h2>发生错误</h2>
+            <p>{error}</p>
+            <p>这可能是因为插件未在飞书环境中运行。</p>
+          </div>
+        ) : !isConfig ? (
           <div className="datetime-display">
             <div 
               className="date-text" 
