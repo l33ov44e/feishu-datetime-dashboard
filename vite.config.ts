@@ -1,26 +1,26 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { semiTheming } from "vite-plugin-semi-theming";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { semiTheming } from 'vite-plugin-semi-theming';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "./",
+  base: './',
+  root: '.',
+  publicDir: 'public',
   plugins: [
     react(),
     semiTheming({
-        theme: "@semi-bot/semi-theme-feishu-dashboard",
+      theme: '@semi-bot/semi-theme-feishu-dashboard',
     }),
   ],
   server: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
   },
   build: {
+    outDir: 'dist',
     rollupOptions: {
-      output: {
-        manualChunks: undefined,
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name].js',
-        assetFileNames: 'assets/[name].[ext]',
+      input: {
+        main: 'public/index.html'
       }
     }
   }
