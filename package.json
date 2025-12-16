@@ -1,0 +1,45 @@
+{
+  "name": "feishu-datetime-dashboard",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "飞书仪表盘 - 日期时间插件",
+  "keywords": [],
+  "output": "dist",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@douyinfe/semi-foundation": "^2.58.0",
+    "@douyinfe/semi-icons": "^2.58.0",
+    "@douyinfe/semi-ui": "^2.58.0",
+    "@lark-base-open/js-sdk": "^0.4.1",
+    "@semi-bot/semi-theme-dashboard": "^1.0.0",
+    "@semi-bot/semi-theme-feishu-dashboard": "^1.0.0",
+    "@types/lodash": "^4.17.1",
+    "@types/node": "^22.7.5",
+    "classnames": "^2.5.1",
+    "i18next": "^23.11.4",
+    "i18next-browser-languagedetector": "^7.2.1",
+    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^14.1.1",
+    "react-scripts": "5.0.1",
+    "reset-css": "^5.0.2",
+    "sass": "^1.77.1",
+    "typescript": "^4.9.5",
+    "vite-plugin-semi-theming": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.2.11"
+  }
+}

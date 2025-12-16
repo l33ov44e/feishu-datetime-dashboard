@@ -1,0 +1,68 @@
+.main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+
+    .datetime-display {
+      text-align: center;
+      
+      .date-text {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .time-text {
+        font-size: 2rem;
+        color: #666;
+      }
+
+      .timezone-text {
+        font-size: 1rem;
+        color: #999;
+        margin-top: 10px;
+      }
+    }
+  }
+
+  &.main-config {
+    .content {
+      align-items: stretch;
+    }
+  }
+
+  .config-panel {
+    border-top: 1px solid var(--semi-color-border);
+    padding: 20px;
+    background: var(--semi-color-bg-1);
+
+    .form {
+      margin-bottom: 20px;
+
+      .form-item {
+        margin-bottom: 16px;
+
+        .label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 600;
+        }
+
+        .input {
+          width: 100%;
+        }
+      }
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+}
