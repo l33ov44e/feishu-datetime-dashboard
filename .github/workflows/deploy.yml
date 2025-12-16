@@ -33,6 +33,12 @@ jobs:
       - name: Build
         run: npm run build
         
+      - name: Fix permissions
+        run: |
+          chmod -c -R +rX "dist/" | while read line; do
+            echo ::warning title=Changed permissions::"$line"
+          done
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
