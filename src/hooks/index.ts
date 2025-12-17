@@ -1,4 +1,4 @@
-import { DashboardState, dashboard } from "@lark-base-open/js-sdk";
+import { DashboardState, dashboard, base } from "@lark-base-open/js-sdk";
 import React from "react";
 import { useLayoutEffect, useState } from "react";
 
@@ -28,7 +28,6 @@ export function useTheme() {
 
 /** 初始化、更新config */
 export function useConfig(updateConfig: (data: any) => void) {
-
   const isCreate = dashboard.state === DashboardState.Create
   React.useEffect(() => {
     if (isCreate) {
@@ -37,7 +36,6 @@ export function useConfig(updateConfig: (data: any) => void) {
     // 初始化获取配置
     dashboard.getConfig().then(updateConfig);
   }, []);
-
 
   React.useEffect(() => {
     const offConfigChange = dashboard.onConfigChange((r) => {
