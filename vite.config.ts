@@ -5,8 +5,6 @@ import { semiTheming } from 'vite-plugin-semi-theming';
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  root: '.',
-  publicDir: 'public',
   plugins: [
     react(),
     semiTheming({
@@ -16,16 +14,4 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
   },
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: 'public/index.html'
-      }
-    },
-    emptyOutDir: true
-  },
-  resolve: {
-    preserveSymlinks: true
-  }
 });
