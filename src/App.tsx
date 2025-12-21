@@ -87,12 +87,22 @@ function App() {
     try {
       setLoading(true);
       const tableList = await base.getTableList();
-      setTables(tableList.map((table: any) => ({
-        id: table.id,
-        name: table.name
-      })));
+      console.log('获取到的表格列表:', tableList);
+      
+      // 过滤并验证数据
+      const validTables = tableList
+        .filter((table: any) => table && table.id && table.name)
+        .map((table: any) => ({
+          id: String(table.id),
+          name: String(table.name)
+        }));
+      
+      console.log('有效的表格列表:', validTables);
+      setTables(validTables);
     } catch (err) {
       console.error('获取数据表列表失败:', err);
+      setError('获取数据表列表失败: ' + (err instanceof Error ? err.message : String(err)));
+      setTables([]);
     } finally {
       setLoading(false);
     }
@@ -110,19 +120,22 @@ function App() {
       // 获取指定表的元信息
       const table = await base.getTable(tableId);
       const fieldList = await table.getFieldMetaList();
+      console.log('获取到的字段列表:', fieldList);
       
-      // 筛选日期类型字段
+      // 筛选日期类型字段并验证数据
       const dateFields = fieldList
-        .filter((field: any) => field.type === 5) // 5 代表日期字段
+        .filter((field: any) => field && field.type === 5 && field.id && field.name) // 5 代表日期字段
         .map((field: any) => ({
-          id: field.id,
-          name: field.name,
+          id: String(field.id),
+          name: String(field.name),
           type: field.type
         }));
       
+      console.log('筛选后的日期字段:', dateFields);
       setFields(dateFields);
     } catch (err) {
       console.error('获取字段列表失败:', err);
+      setError('获取字段列表失败: ' + (err instanceof Error ? err.message : String(err)));
       setFields([]);
     } finally {
       setLoading(false);
@@ -492,11 +505,15 @@ function App() {
                     value={config.tableName}
                     onChange={handleTableChange}
                     className="input"
-                    optionList={tables.map(table => ({ value: table.id, label: table.name }))}
+                    optionList={tables.filter(t => t && t.id && t.name).map(table => ({ 
+                      value: table.id, 
+                      label: table.name 
+                    }))}
                     placeholder="请选择数据表"
                     loading={loading}
                     filter
                     showClear
+                    emptyContent={tables.length === 0 ? '暂无数据表' : '未找到匹配的数据表'}
                   />
                 </div>
                 
