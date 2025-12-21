@@ -14,60 +14,36 @@
     padding: clamp(12px, 3vw, 20px);
     box-sizing: border-box;
     background: linear-gradient(135deg, var(--semi-color-bg-0) 0%, var(--semi-color-bg-1) 100%);
-    min-height: 0; // 允许内容收缩
+    min-height: 0;
+    container-type: size;
     
-    .datetime-display {
-      text-align: center;
+    .datetime-container {
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
-      gap: clamp(8px, 2vh, 12px);
-      padding: clamp(16px, 4vmin, 32px);
-      border-radius: 16px;
-      background: var(--semi-color-bg-0);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      max-width: 90%;
-      width: fit-content;
-      min-width: min(200px, 80%);
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-      }
+      align-items: center;
+      gap: min(3cqh, 20px);
       
       .date-text {
-        font-weight: 600;
-        margin-bottom: 10px;
+        font-size: clamp(1.5rem, 12cqmin, 20rem);
         line-height: 1.2;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        transition: all 0.2s ease;
         word-break: break-word;
-        max-width: 100%;
+        max-width: 95%;
+        white-space: pre-wrap;
       }
       
-      .timezone-text {
-        font-size: clamp(11px, 1.5vw, 14px);
-        opacity: 0.7;
-        margin-bottom: 5px;
-        color: var(--semi-color-text-2);
-        font-weight: 500;
-      }
-      
-      .date-source-label {
-        font-size: clamp(11px, 1.5vw, 14px);
-        opacity: 0.8;
-        margin-top: 5px;
-        padding: clamp(4px, 1vw, 6px) clamp(12px, 2vw, 16px);
-        background: var(--semi-color-fill-0);
-        border-radius: 20px;
-        color: var(--semi-color-text-1);
-        font-weight: 500;
+      .date-label {
+        font-size: clamp(0.75rem, 3cqmin, 3rem);
+        margin-top: min(1cqh, 10px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 100%;
+        max-width: 90%;
+        transition: all 0.2s ease;
       }
     }
   }

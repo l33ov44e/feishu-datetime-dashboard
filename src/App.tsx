@@ -392,42 +392,30 @@ function App() {
             <p>这可能是因为插件未在飞书环境中运行。</p>
           </div>
         ) : (
-          <>
+          <div className="datetime-container">
             <div 
               className="date-text" 
               style={{ 
-                fontSize: `clamp(2rem, 8vmin, ${config.fontSize}px)`,
                 color: config.fontColor,
                 fontWeight: 600,
                 letterSpacing: '0.02em',
                 wordBreak: 'break-word',
                 textAlign: 'center',
-                lineHeight: 1.1,
-                marginBottom: 'clamp(0.5rem, 2vmin, 1rem)'
+                lineHeight: 1.2
               }}
             >
               {loading ? <Spin size="large" /> : formatDateTime()}
             </div>
-            {config.showTimeZone && config.dataSourceType === 'current' && (
-              <div style={{ 
-                fontSize: 'clamp(0.75rem, 2vmin, 0.875rem)',
-                opacity: 0.6,
-                textAlign: 'center',
-                marginBottom: 'clamp(0.25rem, 1vmin, 0.5rem)'
-              }}>
-                {config.timeZone}
-              </div>
-            )}
-            <div style={{
-              fontSize: 'clamp(0.75rem, 2vmin, 0.875rem)',
-              opacity: 0.7,
+            <div className="date-label" style={{
               textAlign: 'center',
-              color: config.fontColor
+              color: config.fontColor,
+              opacity: 0.65,
+              fontWeight: 500
             }}>
               {config.dataSourceType === 'custom' ? config.customDateName : 
                config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
             </div>
-          </>
+          </div>
         )}
       </div>
       
