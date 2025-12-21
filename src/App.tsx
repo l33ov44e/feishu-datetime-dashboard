@@ -1,6 +1,6 @@
 import { dashboard, DashboardState, base, SourceType } from "@lark-base-open/js-sdk";
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Input, Select, Switch, Form, Space, Spin, Typography, Card } from "@douyinfe/semi-ui";
+import { Button, Input, Select, Switch, Form, Space, Spin, Typography, Card, RadioGroup, Radio } from "@douyinfe/semi-ui";
 import { useTheme, useConfig } from "./hooks/index";
 import '@lark-base-open/js-sdk/dist/style/dashboard.css';
 import "./App.scss";
@@ -30,11 +30,12 @@ const DEFAULT_CONFIG = {
   fontFamily: 'Arial, sans-serif',
   fontColor: '#000000',
   showTimeZone: true, // 添加时区显示开关
-  dataSourceType: 'current', // 'current' | 'table' 数据源类型
+  dataSourceType: 'current', // 'current' | 'table' | 'custom' 数据源类型
   tableName: '',
   fieldName: '',
   currentDateName: '当前时间',
   tableDateName: '数据更新时间',
+  customDateTime: '', // 自定义时间
 };
 
 interface IDateTimeConfig {
@@ -47,11 +48,12 @@ interface IDateTimeConfig {
   fontFamily: string;
   fontColor: string;
   showTimeZone: boolean; // 添加时区显示开关
-  dataSourceType: string; // 'current' | 'table' 数据源类型
+  dataSourceType: string; // 'current' | 'table' | 'custom' 数据源类型
   tableName: string;
   fieldName: string;
   currentDateName: string;
   tableDateName: string;
+  customDateTime: string; // 自定义时间
 }
 
 function App() {
@@ -151,8 +153,13 @@ function App() {
       console.log('获取到的字段列表:', fieldList);
       
       // 筛选日期类型字段并验证数据
+      // 5=日期, 1001=创建时间, 1002=最后修改时间, 1003=创建人, 1004=修改人
       const dateFields = fieldList
-        .filter((field: any) => field && field.type === 5 && field.id && field.name) // 5 代表日期字段
+        .filter((field: any) => {
+          const isDateField = field && field.id && field.name && 
+            (field.type === 5 || field.type === 1001 || field.type === 1002);
+          return isDateField;
+        })
         .map((field: any) => ({
           id: String(field.id),
           name: String(field.name),
@@ -237,6 +244,11 @@ function App() {
   // 格式化时间显示
   const formatDateTime = () => {
     try {
+      // 如果是自定义时间
+      if (config.dataSourceType === 'custom' && config.customDateTime) {
+        return config.customDateTime;
+      }
+      
       // 如果是表格数据源且有数据，则显示表格数据
       if (config.dataSourceType === 'table' && tableDate) {
         return tableDate;
@@ -341,21 +353,31 @@ function App() {
             <div 
               className="date-text" 
               style={{ 
-                fontSize: `${config.fontSize}px`,
+                fontSize: `clamp(24px, ${config.fontSize * 0.6}px, ${config.fontSize}px)`,
                 color: config.fontColor,
                 fontWeight: 600,
-                letterSpacing: '0.5px'
+                letterSpacing: '0.5px',
+                wordBreak: 'break-word',
+                textAlign: 'center',
+                lineHeight: 1.2
               }}
             >
               {loading ? <Spin size="large" /> : formatDateTime()}
             </div>
             {config.showTimeZone && config.dataSourceType === 'current' && (
-              <div className="timezone-text">
+              <div className="timezone-text" style={{ 
+                fontSize: 'clamp(12px, 1.5vw, 14px)',
+                marginTop: '8px'
+              }}>
                 {config.timeZone}
               </div>
             )}
-            <div className="date-source-label">
-              {config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
+            <div className="date-source-label" style={{
+              fontSize: 'clamp(12px, 1.5vw, 14px)',
+              marginTop: '12px'
+            }}>
+              {config.dataSourceType === 'custom' ? '自定义时间' : 
+               config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
             </div>
           </div>
         )}
@@ -378,19 +400,36 @@ function App() {
                 borderRadius: '8px',
                 border: '1px solid var(--semi-color-border)'
               }}>
-                <span style={{ fontWeight: 500 }}>
-                  {config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
-                </span>
-                <Switch
-                  checked={config.dataSourceType === 'current'}
-                  onChange={(checked) => setConfig({...config, dataSourceType: checked ? 'current' : 'table'})}
-                  checkedText="当前时间"
-                  uncheckedText="数据表"
-                />
+                <span style={{ fontWeight: 500 }}>数据源选择</span>
+                <RadioGroup 
+                  value={config.dataSourceType} 
+                  onChange={(e) => setConfig({...config, dataSourceType: e.target.value as string})}
+                  type="button"
+                  buttonSize="small"
+                >
+                  <Radio value="current">当前时间</Radio>
+                  <Radio value="table">数据表</Radio>
+                  <Radio value="custom">自定义</Radio>
+                </RadioGroup>
               </div>
             </div>
 
-            {config.dataSourceType === 'current' ? (
+            {config.dataSourceType === 'custom' ? (
+              <div className="form-item">
+                <Form.Label className="label">
+                  自定义时间
+                </Form.Label>
+                <Input
+                  value={config.customDateTime}
+                  onChange={(value) => setConfig({...config, customDateTime: value})}
+                  className="input"
+                  placeholder="输入时间，如：2025/12/21 15:48:03"
+                />
+                <Typography.Text type="tertiary" size="small" style={{ marginTop: 8 }}>
+                  可以输入任意格式的时间文本
+                </Typography.Text>
+              </div>
+            ) : config.dataSourceType === 'current' ? (
               <>
                 <div className="form-item">
                   <Form.Label className="label">
