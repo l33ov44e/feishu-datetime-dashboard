@@ -1,6 +1,7 @@
 import { dashboard, DashboardState, base, SourceType } from "@lark-base-open/js-sdk";
+import type { FilterOperator, FilterConjunction } from "@lark-base-open/js-sdk";
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Input, InputNumber, Select, Switch, Form, Space, Spin, Typography, Card, RadioGroup, Radio } from "@douyinfe/semi-ui";
+import { Button, Input, InputNumber, Select, Switch, Form, Space, Spin, Typography, Card, RadioGroup, Radio, DatePicker } from "@douyinfe/semi-ui";
 import { useTheme, useConfig } from "./hooks/index";
 import '@lark-base-open/js-sdk/dist/style/dashboard.css';
 import "./App.scss";
@@ -34,6 +35,10 @@ const DEFAULT_CONFIG = {
   tableName: '',
   fieldName: '',
   rowIndex: 0, // 选择的行号（从0开始）
+  // 筛选器配置
+  useFilter: false, // 是否启用筛选器
+  filterOperator: 'isGreater' as const, // 筛选操作符
+  filterValue: null as number | null, // 筛选日期值（时间戳）
   currentDateName: '当前时间',
   tableDateName: '数据更新时间',
   customDateTime: '', // 自定义时间
@@ -54,6 +59,10 @@ interface IDateTimeConfig {
   tableName: string;
   fieldName: string;
   rowIndex: number; // 选择的行号
+  // 筛选器配置
+  useFilter: boolean; // 是否启用筛选器
+  filterOperator: 'is' | 'isGreater' | 'isLess' | 'isEmpty' | 'isNotEmpty'; // 筛选操作符
+  filterValue: number | null; // 筛选日期值（时间戳）
   currentDateName: string;
   tableDateName: string;
   customDateTime: string; // 自定义时间
@@ -189,10 +198,27 @@ function App() {
 
     try {
       setLoading(true);
+      
+      // 构建筛选器配置
+      const filterInfo = config.useFilter && config.fieldName && config.filterOperator ? {
+        conjunction: 'and' as FilterConjunction,
+        conditions: [{
+          fieldId: config.fieldName,
+          operator: config.filterOperator as any,
+          value: config.filterValue || undefined,
+          fieldType: undefined
+        }]
+      } : undefined;
+      
+      console.log('应用筛选器:', filterInfo);
+      
       // 使用 getPreviewData 获取数据
       const previewData = await dashboard.getPreviewData([{
         tableId: config.tableName,
-        dataRange: { type: SourceType.ALL },
+        dataRange: { 
+          type: SourceType.ALL,
+          filterInfo: filterInfo
+        },
         groups: []
       }]);
       
@@ -256,7 +282,7 @@ function App() {
     if (!isConfig) {
       loadTableDate();
     }
-  }, [config.dataSourceType, config.tableName, config.fieldName, config.rowIndex, isConfig]);
+  }, [config.dataSourceType, config.tableName, config.fieldName, config.rowIndex, config.useFilter, config.filterOperator, config.filterValue, isConfig]);
 
   // 格式化时间显示
   const formatDateTime = () => {
@@ -642,6 +668,57 @@ function App() {
                     disabled={!config.tableName}
                   />
                 </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    数据筛选
+                    <span style={{fontSize: '12px', color: '#999', marginLeft: '8px'}}>
+                      (按日期条件筛选记录)
+                    </span>
+                  </Form.Label>
+                  <Switch
+                    checked={config.useFilter}
+                    onChange={(checked) => setConfig({...config, useFilter: checked})}
+                    disabled={!config.fieldName}
+                  />
+                </div>
+                
+                {config.useFilter && (
+                  <>
+                    <div className="form-item">
+                      <Form.Label className="label">筛选条件</Form.Label>
+                      <Select
+                        value={config.filterOperator}
+                        onChange={(value) => setConfig({...config, filterOperator: value as any})}
+                        className="input"
+                        disabled={!config.fieldName}
+                      >
+                        <Select.Option value="is">等于</Select.Option>
+                        <Select.Option value="isGreater">晚于（大于）</Select.Option>
+                        <Select.Option value="isLess">早于（小于）</Select.Option>
+                        <Select.Option value="isEmpty">为空</Select.Option>
+                        <Select.Option value="isNotEmpty">不为空</Select.Option>
+                      </Select>
+                    </div>
+                    
+                    {config.filterOperator !== 'isEmpty' && config.filterOperator !== 'isNotEmpty' && (
+                      <div className="form-item">
+                        <Form.Label className="label">筛选日期</Form.Label>
+                        <DatePicker
+                          type="dateTime"
+                          value={config.filterValue ? new Date(config.filterValue) : undefined}
+                          onChange={(date) => {
+                            const timestamp = date ? new Date(date as any).getTime() : null;
+                            setConfig({...config, filterValue: timestamp});
+                          }}
+                          className="input"
+                          placeholder="选择日期时间"
+                          format="yyyy-MM-dd HH:mm:ss"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
                 
                 <div className="form-item">
                   <Form.Label className="label">
