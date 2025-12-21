@@ -96,17 +96,37 @@ function App() {
       setLoading(true);
       const tableList = await base.getTableList();
       console.log('获取到的表格列表:', tableList);
+      console.log('第一个表格对象:', tableList[0]);
       
-      // 过滤并验证数据
-      const validTables = tableList
-        .filter((table: any) => table && table.id && table.name)
-        .map((table: any) => ({
-          id: String(table.id),
-          name: String(table.name)
-        }));
+      // 从Table对象中获取id和name
+      const validTables = await Promise.all(
+        tableList.map(async (table: any) => {
+          try {
+            // 尝试获取表格的ID和名称
+            const tableId = table.id || (table.context && table.context[0]);
+            const tableName = await table.getName();
+            
+            console.log('处理表格:', { tableId, tableName });
+            
+            if (tableId && tableName) {
+              return {
+                id: String(tableId),
+                name: String(tableName)
+              };
+            }
+            return null;
+          } catch (e) {
+            console.error('获取表格信息失败:', e);
+            return null;
+          }
+        })
+      );
       
-      console.log('有效的表格列表:', validTables);
-      setTables(validTables);
+      // 过滤掉null值
+      const filteredTables = validTables.filter(t => t !== null) as {id: string, name: string}[];
+      
+      console.log('有效的表格列表:', filteredTables);
+      setTables(filteredTables);
     } catch (err) {
       console.error('获取数据表列表失败:', err);
       setError('获取数据表列表失败: ' + (err instanceof Error ? err.message : String(err)));
