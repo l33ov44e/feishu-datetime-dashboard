@@ -11,21 +11,26 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: clamp(12px, 3vw, 20px);
     box-sizing: border-box;
     background: linear-gradient(135deg, var(--semi-color-bg-0) 0%, var(--semi-color-bg-1) 100%);
+    min-height: 0; // 允许内容收缩
     
     .datetime-display {
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      padding: 32px;
+      justify-content: center;
+      gap: clamp(8px, 2vh, 12px);
+      padding: clamp(16px, 4vmin, 32px);
       border-radius: 16px;
       background: var(--semi-color-bg-0);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      max-width: 90%;
+      width: fit-content;
+      min-width: min(200px, 80%);
       
       &:hover {
         transform: translateY(-2px);
@@ -38,10 +43,12 @@
         line-height: 1.2;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
+        word-break: break-word;
+        max-width: 100%;
       }
       
       .timezone-text {
-        font-size: 14px;
+        font-size: clamp(11px, 1.5vw, 14px);
         opacity: 0.7;
         margin-bottom: 5px;
         color: var(--semi-color-text-2);
@@ -49,14 +56,18 @@
       }
       
       .date-source-label {
-        font-size: 14px;
+        font-size: clamp(11px, 1.5vw, 14px);
         opacity: 0.8;
         margin-top: 5px;
-        padding: 6px 16px;
+        padding: clamp(4px, 1vw, 6px) clamp(12px, 2vw, 16px);
         background: var(--semi-color-fill-0);
         border-radius: 20px;
         color: var(--semi-color-text-1);
         font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
       }
     }
   }

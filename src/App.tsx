@@ -36,6 +36,7 @@ const DEFAULT_CONFIG = {
   currentDateName: '当前时间',
   tableDateName: '数据更新时间',
   customDateTime: '', // 自定义时间
+  customDateName: '自定义时间', // 自定义时间标签
 };
 
 interface IDateTimeConfig {
@@ -54,6 +55,7 @@ interface IDateTimeConfig {
   currentDateName: string;
   tableDateName: string;
   customDateTime: string; // 自定义时间
+  customDateName: string; // 自定义时间标签
 }
 
 function App() {
@@ -376,7 +378,7 @@ function App() {
               fontSize: 'clamp(12px, 1.5vw, 14px)',
               marginTop: '12px'
             }}>
-              {config.dataSourceType === 'custom' ? '自定义时间' : 
+              {config.dataSourceType === 'custom' ? config.customDateName : 
                config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
             </div>
           </div>
@@ -391,44 +393,46 @@ function App() {
               <Form.Label className="label">
                 数据源选择
               </Form.Label>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                padding: '12px 16px', 
-                background: 'var(--semi-color-fill-0)', 
-                borderRadius: '8px',
-                border: '1px solid var(--semi-color-border)'
-              }}>
-                <span style={{ fontWeight: 500 }}>数据源选择</span>
-                <RadioGroup 
-                  value={config.dataSourceType} 
-                  onChange={(e) => setConfig({...config, dataSourceType: e.target.value as string})}
-                  type="button"
-                  buttonSize="small"
-                >
-                  <Radio value="current">当前时间</Radio>
-                  <Radio value="table">数据表</Radio>
-                  <Radio value="custom">自定义</Radio>
-                </RadioGroup>
-              </div>
+              <RadioGroup 
+                value={config.dataSourceType} 
+                onChange={(e) => setConfig({...config, dataSourceType: e.target.value as string})}
+                type="button"
+                style={{ width: '100%' }}
+              >
+                <Radio value="current" style={{ flex: 1 }}>当前时间</Radio>
+                <Radio value="table" style={{ flex: 1 }}>数据表</Radio>
+                <Radio value="custom" style={{ flex: 1 }}>自定义</Radio>
+              </RadioGroup>
             </div>
 
             {config.dataSourceType === 'custom' ? (
-              <div className="form-item">
-                <Form.Label className="label">
-                  自定义时间
-                </Form.Label>
-                <Input
-                  value={config.customDateTime}
-                  onChange={(value) => setConfig({...config, customDateTime: value})}
-                  className="input"
-                  placeholder="输入时间，如：2025/12/21 15:48:03"
-                />
-                <Typography.Text type="tertiary" size="small" style={{ marginTop: 8 }}>
-                  可以输入任意格式的时间文本
-                </Typography.Text>
-              </div>
+              <>
+                <div className="form-item">
+                  <Form.Label className="label">
+                    标签名称
+                  </Form.Label>
+                  <Input
+                    value={config.customDateName}
+                    onChange={(value) => setConfig({...config, customDateName: value})}
+                    className="input"
+                    placeholder="如：更新时间、任务截止时间等"
+                  />
+                </div>
+                <div className="form-item">
+                  <Form.Label className="label">
+                    自定义时间
+                  </Form.Label>
+                  <Input
+                    value={config.customDateTime}
+                    onChange={(value) => setConfig({...config, customDateTime: value})}
+                    className="input"
+                    placeholder="输入时间，如：2025/12/21 15:48:03"
+                  />
+                  <Typography.Text type="tertiary" size="small" style={{ marginTop: 8, display: 'block' }}>
+                    可以输入任意格式的时间文本
+                  </Typography.Text>
+                </div>
+              </>
             ) : config.dataSourceType === 'current' ? (
               <>
                 <div className="form-item">
