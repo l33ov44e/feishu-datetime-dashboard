@@ -1,6 +1,6 @@
 import { dashboard, DashboardState, base, SourceType } from "@lark-base-open/js-sdk";
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Input, Select, Switch, Form, Space, Spin, Typography, Card, RadioGroup, Radio } from "@douyinfe/semi-ui";
+import { Button, Input, InputNumber, Select, Switch, Form, Space, Spin, Typography, Card, RadioGroup, Radio } from "@douyinfe/semi-ui";
 import { useTheme, useConfig } from "./hooks/index";
 import '@lark-base-open/js-sdk/dist/style/dashboard.css';
 import "./App.scss";
@@ -33,6 +33,7 @@ const DEFAULT_CONFIG = {
   dataSourceType: 'current', // 'current' | 'table' | 'custom' 数据源类型
   tableName: '',
   fieldName: '',
+  rowIndex: 0, // 选择的行号（从0开始）
   currentDateName: '当前时间',
   tableDateName: '数据更新时间',
   customDateTime: '', // 自定义时间
@@ -52,6 +53,7 @@ interface IDateTimeConfig {
   dataSourceType: string; // 'current' | 'table' | 'custom' 数据源类型
   tableName: string;
   fieldName: string;
+  rowIndex: number; // 选择的行号
   currentDateName: string;
   tableDateName: string;
   customDateTime: string; // 自定义时间
@@ -190,14 +192,27 @@ function App() {
       // 使用 getPreviewData 获取数据
       const previewData = await dashboard.getPreviewData([{
         tableId: config.tableName,
-        dataRange: { type: SourceType.ALL }, // ALL
+        dataRange: { type: SourceType.ALL },
         groups: []
       }]);
       
-      if (previewData && previewData.length > 1 && previewData[1] && previewData[1][0]) {
-        const cellData = previewData[1][0];
-        const dateStr = cellData.text || cellData.value || '';
-        setTableDate(String(dateStr));
+      console.log('预览数据:', previewData);
+      
+      // previewData[0] 是表头，previewData[1]开始是数据行
+      if (previewData && previewData.length > 1) {
+        const rowIndex = config.rowIndex || 0;
+        // 实际数据从索引1开始，所以要+1
+        const dataRow = previewData[rowIndex + 1];
+        
+        if (dataRow && dataRow[0]) {
+          const cellData = dataRow[0];
+          const dateStr = cellData.text || cellData.value || '';
+          console.log(`获取第${rowIndex}行数据:`, dateStr);
+          setTableDate(String(dateStr));
+        } else {
+          console.log('没有找到指定行的数据');
+          setTableDate(null);
+        }
       }
     } catch (err) {
       console.error('获取表格日期数据失败:', err);
@@ -241,7 +256,7 @@ function App() {
     if (!isConfig) {
       loadTableDate();
     }
-  }, [config.dataSourceType, config.tableName, config.fieldName, isConfig]);
+  }, [config.dataSourceType, config.tableName, config.fieldName, config.rowIndex, isConfig]);
 
   // 格式化时间显示
   const formatDateTime = () => {
@@ -351,37 +366,42 @@ function App() {
             <p>这可能是因为插件未在飞书环境中运行。</p>
           </div>
         ) : (
-          <div className="datetime-display">
+          <>
             <div 
               className="date-text" 
               style={{ 
-                fontSize: `clamp(24px, ${config.fontSize * 0.6}px, ${config.fontSize}px)`,
+                fontSize: `clamp(2rem, 8vmin, ${config.fontSize}px)`,
                 color: config.fontColor,
                 fontWeight: 600,
-                letterSpacing: '0.5px',
+                letterSpacing: '0.02em',
                 wordBreak: 'break-word',
                 textAlign: 'center',
-                lineHeight: 1.2
+                lineHeight: 1.1,
+                marginBottom: 'clamp(0.5rem, 2vmin, 1rem)'
               }}
             >
               {loading ? <Spin size="large" /> : formatDateTime()}
             </div>
             {config.showTimeZone && config.dataSourceType === 'current' && (
-              <div className="timezone-text" style={{ 
-                fontSize: 'clamp(12px, 1.5vw, 14px)',
-                marginTop: '8px'
+              <div style={{ 
+                fontSize: 'clamp(0.75rem, 2vmin, 0.875rem)',
+                opacity: 0.6,
+                textAlign: 'center',
+                marginBottom: 'clamp(0.25rem, 1vmin, 0.5rem)'
               }}>
                 {config.timeZone}
               </div>
             )}
-            <div className="date-source-label" style={{
-              fontSize: 'clamp(12px, 1.5vw, 14px)',
-              marginTop: '12px'
+            <div style={{
+              fontSize: 'clamp(0.75rem, 2vmin, 0.875rem)',
+              opacity: 0.7,
+              textAlign: 'center',
+              color: config.fontColor
             }}>
               {config.dataSourceType === 'custom' ? config.customDateName : 
                config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
             </div>
-          </div>
+          </>
         )}
       </div>
       
@@ -602,6 +622,24 @@ function App() {
                     disabled={!config.tableName}
                     emptyContent={!config.tableName ? '请先选择数据表' : '该表没有日期字段'}
                     showClear
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    选择数据行
+                    <span style={{fontSize: '12px', color: '#999', marginLeft: '8px'}}>
+                      (0=第一行数据)
+                    </span>
+                  </Form.Label>
+                  <InputNumber
+                    value={config.rowIndex || 0}
+                    onChange={(value) => setConfig({...config, rowIndex: Number(value) || 0})}
+                    min={0}
+                    step={1}
+                    placeholder="输入行号"
+                    className="input"
+                    disabled={!config.tableName}
                   />
                 </div>
                 
