@@ -68,18 +68,26 @@ function App() {
 
   // 检查是否处于配置模式
   useEffect(() => {
-    try {
-      const isCreate = dashboard.state === DashboardState.Create;
-      const configMode = dashboard.state === DashboardState.Config || isCreate;
-      setIsConfig(configMode);
-      
-      // 如果是配置模式，立即加载表格列表
-      if (configMode) {
-        loadTables();
+    const checkAndLoadTables = async () => {
+      try {
+        console.log('Dashboard state:', dashboard.state);
+        const isCreate = dashboard.state === DashboardState.Create;
+        const configMode = dashboard.state === DashboardState.Config || isCreate;
+        console.log('Is config mode:', configMode, 'isCreate:', isCreate);
+        setIsConfig(configMode);
+        
+        // 如果是配置模式，立即加载表格列表
+        if (configMode) {
+          console.log('Starting to load tables...');
+          await loadTables();
+        }
+      } catch (e) {
+        console.error('Error in dashboard state check:', e);
+        setError('无法访问飞书仪表盘API: ' + (e instanceof Error ? e.message : String(e)));
       }
-    } catch (e) {
-      setError('无法访问飞书仪表盘API: ' + (e instanceof Error ? e.message : String(e)));
-    }
+    };
+    
+    checkAndLoadTables();
   }, []);
 
   // 获取数据表列表
