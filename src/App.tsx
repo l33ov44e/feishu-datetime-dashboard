@@ -64,17 +64,23 @@ function App() {
   const [fields, setFields] = useState<{id: string, name: string, type: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableDate, setTableDate] = useState<string | null>(null);
+  const [isConfig, setIsConfig] = useState(false);
 
-  let isCreate = false;
-  let isConfig = false;
-  
-  try {
-    isCreate = dashboard.state === DashboardState.Create;
-    /** 是否配置模式下 */
-    isConfig = dashboard.state === DashboardState.Config || isCreate;
-  } catch (e) {
-    setError('无法访问飞书仪表盘API: ' + (e instanceof Error ? e.message : String(e)));
-  }
+  // 检查是否处于配置模式
+  useEffect(() => {
+    try {
+      const isCreate = dashboard.state === DashboardState.Create;
+      const configMode = dashboard.state === DashboardState.Config || isCreate;
+      setIsConfig(configMode);
+      
+      // 如果是配置模式，立即加载表格列表
+      if (configMode) {
+        loadTables();
+      }
+    } catch (e) {
+      setError('无法访问飞书仪表盘API: ' + (e instanceof Error ? e.message : String(e)));
+    }
+  }, []);
 
   // 获取数据表列表
   const loadTables = async () => {
@@ -172,13 +178,6 @@ function App() {
     
     return () => clearInterval(timer);
   }, []);
-
-  // 加载表格列表
-  useEffect(() => {
-    if (isConfig) {
-      loadTables();
-    }
-  }, [isConfig]);
   
   // 当表格选择变化时加载字段
   useEffect(() => {
