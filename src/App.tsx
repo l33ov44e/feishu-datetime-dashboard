@@ -1,6 +1,6 @@
-import { dashboard, DashboardState, base } from "@lark-base-open/js-sdk";
+import { dashboard, DashboardState, base, SourceType } from "@lark-base-open/js-sdk";
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Input, Select, Switch, Form, Space, Spin, Typography } from "@douyinfe/semi-ui";
+import { Button, Input, Select, Switch, Form, Space, Spin, Typography, Card } from "@douyinfe/semi-ui";
 import { useTheme, useConfig } from "./hooks/index";
 import '@lark-base-open/js-sdk/dist/style/dashboard.css';
 import "./App.scss";
@@ -94,22 +94,30 @@ function App() {
 
   // 根据表ID获取字段列表
   const loadFields = async (tableId: string) => {
-    if (!tableId) return;
+    if (!tableId) {
+      setFields([]);
+      return;
+    }
     
     try {
       setLoading(true);
-      const categories = await dashboard.getCategories(tableId);
-      // 只筛选日期类型的字段
-      const dateFields = categories.filter((field: any) => 
-        field.fieldType === 5 // 5 代表日期字段
-      ).map((field: any) => ({
-        id: field.fieldId,
-        name: field.fieldName,
-        type: field.fieldType
-      }));
+      // 获取指定表的元信息
+      const table = await base.getTable(tableId);
+      const fieldList = await table.getFieldMetaList();
+      
+      // 筛选日期类型字段
+      const dateFields = fieldList
+        .filter((field: any) => field.type === 5) // 5 代表日期字段
+        .map((field: any) => ({
+          id: field.id,
+          name: field.name,
+          type: field.type
+        }));
+      
       setFields(dateFields);
     } catch (err) {
       console.error('获取字段列表失败:', err);
+      setFields([]);
     } finally {
       setLoading(false);
     }
@@ -123,24 +131,17 @@ function App() {
 
     try {
       setLoading(true);
-      // 构造数据条件
-      const dataConditions: any = [{
+      // 使用 getPreviewData 获取数据
+      const previewData = await dashboard.getPreviewData([{
         tableId: config.tableName,
-        dataRange: { type: 0 }, // ALL
-        groups: [],
-        series: 'COUNTA'
-      }];
+        dataRange: { type: SourceType.ALL }, // ALL
+        groups: []
+      }]);
       
-      // 获取预览数据
-      const previewData = await dashboard.getPreviewData(dataConditions);
-      
-      if (previewData && previewData.length > 1) {
-        // 获取第一行数据中的日期字段值
-        const firstRow = previewData[1];
-        if (firstRow && firstRow[0]) {
-          const dateValue = firstRow[0].text || firstRow[0].value;
-          setTableDate(String(dateValue));
-        }
+      if (previewData && previewData.length > 1 && previewData[1] && previewData[1][0]) {
+        const cellData = previewData[1][0];
+        const dateStr = cellData.text || cellData.value || '';
+        setTableDate(String(dateStr));
       }
     } catch (err) {
       console.error('获取表格日期数据失败:', err);
@@ -149,8 +150,6 @@ function App() {
       setLoading(false);
     }
   };
-
-  // 移除了 useTranslation 因为我们没有配置 i18n
 
   const updateConfig = (res: any) => {
     const { customConfig } = res;
@@ -174,13 +173,17 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // 加载表格和字段数据
+  // 加载表格列表
   useEffect(() => {
     if (isConfig) {
       loadTables();
-      if (config.tableName) {
-        loadFields(config.tableName);
-      }
+    }
+  }, [isConfig]);
+  
+  // 当表格选择变化时加载字段
+  useEffect(() => {
+    if (isConfig && config.tableName) {
+      loadFields(config.tableName);
     }
   }, [isConfig, config.tableName]);
 
@@ -276,7 +279,7 @@ function App() {
     const stringValue = value as string;
     const newConfig = {...config, tableName: stringValue, fieldName: ''};
     setConfig(newConfig);
-    loadFields(stringValue);
+    setFields([]); // 清空字段列表
   };
 
   // 处理字段选择变化
@@ -299,10 +302,12 @@ function App() {
               className="date-text" 
               style={{ 
                 fontSize: `${config.fontSize}px`,
-                color: config.fontColor
+                color: config.fontColor,
+                fontWeight: 600,
+                letterSpacing: '0.5px'
               }}
             >
-              {loading ? <Spin /> : formatDateTime()}
+              {loading ? <Spin size="large" /> : formatDateTime()}
             </div>
             {config.showTimeZone && config.dataSourceType === 'current' && (
               <div className="timezone-text">
@@ -318,67 +323,34 @@ function App() {
       
       {isConfig && (
         <div className="config-panel">
+          <Typography.Title heading={4} style={{ marginBottom: 20 }}>配置设置</Typography.Title>
           <Form className="form">
             <div className="form-item">
               <Form.Label className="label">
                 数据源选择
               </Form.Label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{config.currentDateName}</span>
-                  <Switch
-                    checked={config.dataSourceType === 'table'}
-                    onChange={(checked) => setConfig({...config, dataSourceType: checked ? 'table' : 'current'})}
-                  />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{config.tableDateName}</span>
-                </div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                padding: '12px 16px', 
+                background: 'var(--semi-color-fill-0)', 
+                borderRadius: '8px',
+                border: '1px solid var(--semi-color-border)'
+              }}>
+                <span style={{ fontWeight: 500 }}>
+                  {config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
+                </span>
+                <Switch
+                  checked={config.dataSourceType === 'current'}
+                  onChange={(checked) => setConfig({...config, dataSourceType: checked ? 'current' : 'table'})}
+                  checkedText="当前时间"
+                  uncheckedText="数据表"
+                />
               </div>
             </div>
 
-            {config.dataSourceType === 'table' ? (
-              <>
-                <div className="form-item">
-                  <Form.Label className="label">
-                    选择数据表
-                  </Form.Label>
-                  <Select
-                    value={config.tableName}
-                    onChange={handleTableChange}
-                    className="input"
-                    optionList={tables.map(table => ({ value: table.id, label: table.name }))}
-                    placeholder="请选择数据表"
-                    loading={loading}
-                  />
-                </div>
-                
-                <div className="form-item">
-                  <Form.Label className="label">
-                    选择日期字段
-                  </Form.Label>
-                  <Select
-                    value={config.fieldName}
-                    onChange={handleFieldChange}
-                    className="input"
-                    optionList={fields.map(field => ({ value: field.id, label: field.name }))}
-                    placeholder="请选择日期字段"
-                    loading={loading}
-                  />
-                </div>
-                
-                <div className="form-item">
-                  <Form.Label className="label">
-                    数据更新时间名称
-                  </Form.Label>
-                  <Input
-                    value={config.tableDateName}
-                    onChange={(value) => setConfig({...config, tableDateName: value})}
-                    placeholder="请输入数据更新时间名称"
-                  />
-                </div>
-              </>
-            ) : (
+            {config.dataSourceType === 'current' ? (
               <>
                 <div className="form-item">
                   <Form.Label className="label">
@@ -390,6 +362,7 @@ function App() {
                     className="input"
                     optionList={TIME_ZONES}
                     filter
+                    placeholder="选择时区"
                   />
                 </div>
                 
@@ -397,23 +370,31 @@ function App() {
                   <Form.Label className="label">
                     显示设置
                   </Form.Label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 12,
+                    padding: '12px 16px',
+                    background: 'var(--semi-color-fill-0)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--semi-color-border)'
+                  }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>日期</span>
+                      <span>显示日期</span>
                       <Switch
                         checked={config.showDate}
                         onChange={(checked) => setConfig({...config, showDate: checked})}
                       />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>时间</span>
+                      <span>显示时间</span>
                       <Switch
                         checked={config.showTime}
                         onChange={(checked) => setConfig({...config, showTime: checked})}
                       />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>时区</span>
+                      <span>显示时区</span>
                       <Switch
                         checked={config.showTimeZone}
                         onChange={(checked) => setConfig({...config, showTimeZone: checked})}
@@ -472,7 +453,7 @@ function App() {
                       onChange={(value) => setConfig({...config, fontSize: Number(value)})}
                       style={{ flex: 1 }}
                     />
-                    <span>{config.fontSize}px</span>
+                    <span style={{ minWidth: 50, textAlign: 'right' }}>{config.fontSize}px</span>
                   </div>
                 </div>
                 
@@ -485,20 +466,66 @@ function App() {
                       type="color"
                       value={config.fontColor}
                       onChange={(e) => setConfig({...config, fontColor: e.target.value})}
-                      style={{ width: '100%' }}
+                      style={{ width: '100%', height: 36, cursor: 'pointer', border: '1px solid var(--semi-color-border)', borderRadius: 4 }}
                     />
-                    <span>{config.fontColor}</span>
+                    <span style={{ minWidth: 80, textAlign: 'right' }}>{config.fontColor}</span>
                   </div>
                 </div>
                 
                 <div className="form-item">
                   <Form.Label className="label">
-                    当前时间名称
+                    标签名称
                   </Form.Label>
                   <Input
                     value={config.currentDateName}
                     onChange={(value) => setConfig({...config, currentDateName: value})}
-                    placeholder="请输入当前时间名称"
+                    placeholder="请输入当前时间标签"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="form-item">
+                  <Form.Label className="label">
+                    选择数据表
+                  </Form.Label>
+                  <Select
+                    value={config.tableName}
+                    onChange={handleTableChange}
+                    className="input"
+                    optionList={tables.map(table => ({ value: table.id, label: table.name }))}
+                    placeholder="请选择数据表"
+                    loading={loading}
+                    filter
+                    showClear
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    选择日期字段
+                  </Form.Label>
+                  <Select
+                    value={config.fieldName}
+                    onChange={handleFieldChange}
+                    className="input"
+                    optionList={fields.map(field => ({ value: field.id, label: field.name }))}
+                    placeholder="请选择日期字段"
+                    loading={loading}
+                    disabled={!config.tableName}
+                    emptyContent={!config.tableName ? '请先选择数据表' : '该表没有日期字段'}
+                    showClear
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    标签名称
+                  </Form.Label>
+                  <Input
+                    value={config.tableDateName}
+                    onChange={(value) => setConfig({...config, tableDateName: value})}
+                    placeholder="请输入数据更新时间标签"
                   />
                 </div>
               </>
@@ -509,6 +536,7 @@ function App() {
             theme="solid"
             className="btn"
             onClick={saveConfig}
+            size="large"
           >
             保存配置
           </Button>

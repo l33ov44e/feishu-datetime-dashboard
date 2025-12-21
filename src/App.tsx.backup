@@ -1,0 +1,531 @@
+import { dashboard, DashboardState, base } from "@lark-base-open/js-sdk";
+import React, { useState, useEffect, useCallback } from "react";
+import { Button, Input, Select, Switch, Form, Space, Spin, Typography } from "@douyinfe/semi-ui";
+import { useTheme, useConfig } from "./hooks/index";
+import '@lark-base-open/js-sdk/dist/style/dashboard.css';
+import "./App.scss";
+import classnames from "classnames";
+import { debounce } from "lodash";
+
+// 常用时区列表 - 使用中文标签
+const TIME_ZONES = [
+  { value: 'UTC', label: '协调世界时 (UTC)' },
+  { value: 'Asia/Shanghai', label: '中国标准时间 (GMT+8)' },
+  { value: 'Asia/Tokyo', label: '日本时间 (GMT+9)' },
+  { value: 'Asia/Seoul', label: '韩国标准时间 (GMT+9)' },
+  { value: 'America/New_York', label: '纽约时间 (GMT-5/-4)' },
+  { value: 'America/Los_Angeles', label: '洛杉矶时间 (GMT-8/-7)' },
+  { value: 'Europe/London', label: '伦敦时间 (GMT+0/+1)' },
+  { value: 'Europe/Paris', label: '巴黎时间 (GMT+1/+2)' },
+];
+
+// 默认配置
+const DEFAULT_CONFIG = {
+  timeZone: 'Asia/Shanghai',
+  showDate: true,
+  showTime: true,
+  dateFormat: 'YYYY-MM-DD',
+  timeFormat: 'HH:mm:ss',
+  fontSize: 24,
+  fontFamily: 'Arial, sans-serif',
+  fontColor: '#000000',
+  showTimeZone: true, // 添加时区显示开关
+  dataSourceType: 'current', // 'current' | 'table' 数据源类型
+  tableName: '',
+  fieldName: '',
+  currentDateName: '当前时间',
+  tableDateName: '数据更新时间',
+};
+
+interface IDateTimeConfig {
+  timeZone: string;
+  showDate: boolean;
+  showTime: boolean;
+  dateFormat: string;
+  timeFormat: string;
+  fontSize: number;
+  fontFamily: string;
+  fontColor: string;
+  showTimeZone: boolean; // 添加时区显示开关
+  dataSourceType: string; // 'current' | 'table' 数据源类型
+  tableName: string;
+  fieldName: string;
+  currentDateName: string;
+  tableDateName: string;
+}
+
+function App() {
+  const { bgColor } = useTheme();
+
+  const [config, setConfig] = useState<IDateTimeConfig>(DEFAULT_CONFIG);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [error, setError] = useState<string | null>(null);
+  const [tables, setTables] = useState<{id: string, name: string}[]>([]);
+  const [fields, setFields] = useState<{id: string, name: string, type: string}[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [tableDate, setTableDate] = useState<string | null>(null);
+
+  let isCreate = false;
+  let isConfig = false;
+  
+  try {
+    isCreate = dashboard.state === DashboardState.Create;
+    /** 是否配置模式下 */
+    isConfig = dashboard.state === DashboardState.Config || isCreate;
+  } catch (e) {
+    setError('无法访问飞书仪表盘API: ' + (e instanceof Error ? e.message : String(e)));
+  }
+
+  // 获取数据表列表
+  const loadTables = async () => {
+    try {
+      setLoading(true);
+      const tableList = await base.getTableList();
+      setTables(tableList.map((table: any) => ({
+        id: table.id,
+        name: table.name
+      })));
+    } catch (err) {
+      console.error('获取数据表列表失败:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 根据表ID获取字段列表
+  const loadFields = async (tableId: string) => {
+    if (!tableId) {
+      setFields([]);
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      // 获取指定表的元信息
+      const table = await base.getTable(tableId);
+      const fieldList = await table.getFieldMetaList();
+      
+      // 筛选日期类型字段
+      const dateFields = fieldList
+        .filter((field: any) => field.type === 5) // 5 代表日期字段
+        .map((field: any) => ({
+          id: field.id,
+          name: field.name,
+          type: field.type
+        }));
+      
+      setFields(dateFields);
+    } catch (err) {
+      console.error('获取字段列表失败:', err);
+      setFields([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取表格中的日期数据
+  const loadTableDate = async () => {
+    if (!config.tableName || !config.fieldName || config.dataSourceType !== 'table') {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // 构造数据条件
+      const dataConditions: any = [{
+        tableId: config.tableName,
+        dataRange: { type: 0 }, // ALL
+        groups: [],
+        series: 'COUNTA'
+      }];
+      
+      // 获取预览数据
+      const previewData = await dashboard.getPreviewData(dataConditions);
+      
+      if (previewData && previewData.length > 1) {
+        // 获取第一行数据中的日期字段值
+        const firstRow = previewData[1];
+        if (firstRow && firstRow[0]) {
+          const dateValue = firstRow[0].text || firstRow[0].value;
+          setTableDate(String(dateValue));
+        }
+      }
+    } catch (err) {
+      console.error('获取表格日期数据失败:', err);
+      setTableDate(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 移除了 useTranslation 因为我们没有配置 i18n
+
+  const updateConfig = (res: any) => {
+    const { customConfig } = res;
+    if (customConfig) {
+      setConfig({ ...DEFAULT_CONFIG, ...customConfig });
+    }
+  };
+
+  try {
+    useConfig(updateConfig);
+  } catch (e) {
+    setError(prev => prev || '配置钩子错误: ' + (e instanceof Error ? e.message : String(e)));
+  }
+
+  // 更新时钟
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // 加载表格和字段数据
+  useEffect(() => {
+    if (isConfig) {
+      loadTables();
+    }
+  }, [isConfig]);
+  
+  // 当表格选择变化时加载字段
+  useEffect(() => {
+    if (isConfig && config.tableName) {
+      loadFields(config.tableName);
+    }
+  }, [isConfig, config.tableName]);
+
+  // 加载表格日期数据
+  useEffect(() => {
+    if (!isConfig) {
+      loadTableDate();
+    }
+  }, [config.dataSourceType, config.tableName, config.fieldName, isConfig]);
+
+  // 格式化时间显示
+  const formatDateTime = () => {
+    try {
+      // 如果是表格数据源且有数据，则显示表格数据
+      if (config.dataSourceType === 'table' && tableDate) {
+        return tableDate;
+      }
+      
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: config.timeZone,
+      };
+      
+      if (config.showDate) {
+        switch (config.dateFormat) {
+          case 'YYYY-MM-DD':
+            options.year = 'numeric';
+            options.month = '2-digit';
+            options.day = '2-digit';
+            break;
+          case 'MM/DD/YYYY':
+            options.year = 'numeric';
+            options.month = '2-digit';
+            options.day = '2-digit';
+            break;
+          case 'DD/MM/YYYY':
+            options.year = 'numeric';
+            options.month = '2-digit';
+            options.day = '2-digit';
+            break;
+          case 'MMM DD, YYYY':
+            options.year = 'numeric';
+            options.month = 'short';
+            options.day = '2-digit';
+            break;
+        }
+      }
+      
+      if (config.showTime) {
+        switch (config.timeFormat) {
+          case 'HH:mm:ss':
+            options.hour = '2-digit';
+            options.minute = '2-digit';
+            options.second = '2-digit';
+            options.hour12 = false;
+            break;
+          case 'hh:mm:ss A':
+            options.hour = '2-digit';
+            options.minute = '2-digit';
+            options.second = '2-digit';
+            options.hour12 = true;
+            break;
+          case 'HH:mm':
+            options.hour = '2-digit';
+            options.minute = '2-digit';
+            options.hour12 = false;
+            break;
+        }
+      }
+      
+      return new Intl.DateTimeFormat('zh-CN', options).format(currentTime);
+    } catch (e) {
+      return 'Invalid Timezone';
+    }
+  };
+
+  const debounceSetConfig = useCallback(
+    debounce((newConfig: IDateTimeConfig) => {
+      setConfig(newConfig);
+    }, 500),
+    []
+  );
+
+  function saveConfig() {
+    // 保存配置
+    dashboard.saveConfig({
+      customConfig: config,
+      dataConditions: [],
+    } as any);
+  }
+
+  // 处理表选择变化
+  const handleTableChange = (value: string | number | readonly string[] | undefined | Record<string, any>) => {
+    const stringValue = value as string;
+    const newConfig = {...config, tableName: stringValue, fieldName: ''};
+    setConfig(newConfig);
+    loadFields(stringValue);
+  };
+
+  // 处理字段选择变化
+  const handleFieldChange = (value: string | number | readonly string[] | undefined | Record<string, any>) => {
+    setConfig({...config, fieldName: value as string});
+  };
+
+  return (
+    <main style={{backgroundColor: bgColor}} className={classnames({"main-config": isConfig, main: true})}>
+      <div className="content">
+        {error ? (
+          <div style={{ padding: 20, color: 'red' }}>
+            <h2>发生错误</h2>
+            <p>{error}</p>
+            <p>这可能是因为插件未在飞书环境中运行。</p>
+          </div>
+        ) : (
+          <div className="datetime-display">
+            <div 
+              className="date-text" 
+              style={{ 
+                fontSize: `${config.fontSize}px`,
+                color: config.fontColor
+              }}
+            >
+              {loading ? <Spin /> : formatDateTime()}
+            </div>
+            {config.showTimeZone && config.dataSourceType === 'current' && (
+              <div className="timezone-text">
+                {config.timeZone}
+              </div>
+            )}
+            <div className="date-source-label">
+              {config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {isConfig && (
+        <div className="config-panel">
+          <Form className="form">
+            <div className="form-item">
+              <Form.Label className="label">
+                数据源选择
+              </Form.Label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--semi-color-fill-0)', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 500 }}>{config.dataSourceType === 'current' ? config.currentDateName : config.tableDateName}</span>
+                <Switch
+                  checked={config.dataSourceType === 'current'}
+                  onChange={(checked) => setConfig({...config, dataSourceType: checked ? 'current' : 'table'})}
+                  checkedText="当前时间"
+                  uncheckedText="数据表时间"
+                />
+              </div>
+            </div>
+
+            {config.dataSourceType === 'current' ? (
+              <>
+                <div className="form-item">
+                  <Form.Label className="label">
+                    选择数据表
+                  </Form.Label>
+                  <Select
+                    value={config.tableName}
+                    onChange={handleTableChange}
+                    className="input"
+                    optionList={tables.map(table => ({ value: table.id, label: table.name }))}
+                    placeholder="请选择数据表"
+                    loading={loading}
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    选择日期字段
+                  </Form.Label>
+                  <Select
+                    value={config.fieldName}
+                    onChange={handleFieldChange}
+                    className="input"
+                    optionList={fields.map(field => ({ value: field.id, label: field.name }))}
+                    placeholder="请选择日期字段"
+                    loading={loading}
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    数据更新时间名称
+                  </Form.Label>
+                  <Input
+                    value={config.tableDateName}
+                    onChange={(value) => setConfig({...config, tableDateName: value})}
+                    placeholder="请输入数据更新时间名称"
+                  />
+                </div>
+              </>
+            {config.dataSourceType === 'table' && (
+              <>
+                <div className="form-item">
+                  <Form.Label className="label">
+                    时区选择
+                  </Form.Label>
+                  <Select
+                    value={config.timeZone}
+                    onChange={(value) => setConfig({...config, timeZone: value as string})}
+                    className="input"
+                    optionList={TIME_ZONES}
+                    filter
+                  />
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    显示设置
+                  </Form.Label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>日期</span>
+                      <Switch
+                        checked={config.showDate}
+                        onChange={(checked) => setConfig({...config, showDate: checked})}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>时间</span>
+                      <Switch
+                        checked={config.showTime}
+                        onChange={(checked) => setConfig({...config, showTime: checked})}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>时区</span>
+                      <Switch
+                        checked={config.showTimeZone}
+                        onChange={(checked) => setConfig({...config, showTimeZone: checked})}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {config.showDate && (
+                  <div className="form-item">
+                    <Form.Label className="label">
+                      日期格式
+                    </Form.Label>
+                    <Select
+                      value={config.dateFormat}
+                      onChange={(value) => setConfig({...config, dateFormat: value as string})}
+                      className="input"
+                      optionList={[
+                        { value: 'YYYY-MM-DD', label: '年-月-日 (YYYY-MM-DD)' },
+                        { value: 'MM/DD/YYYY', label: '月/日/年 (MM/DD/YYYY)' },
+                        { value: 'DD/MM/YYYY', label: '日/月/年 (DD/MM/YYYY)' },
+                        { value: 'MMM DD, YYYY', label: '月份 日, 年 (MMM DD, YYYY)' },
+                      ]}
+                    />
+                  </div>
+                )}
+                
+                {config.showTime && (
+                  <div className="form-item">
+                    <Form.Label className="label">
+                      时间格式
+                    </Form.Label>
+                    <Select
+                      value={config.timeFormat}
+                      onChange={(value) => setConfig({...config, timeFormat: value as string})}
+                      className="input"
+                      optionList={[
+                        { value: 'HH:mm:ss', label: '24小时制 (HH:mm:ss)' },
+                        { value: 'hh:mm:ss A', label: '12小时制 (hh:mm:ss A)' },
+                        { value: 'HH:mm', label: '无秒 (HH:mm)' },
+                      ]}
+                    />
+                  </div>
+                )}
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    字体大小: {config.fontSize}px
+                  </Form.Label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <Input
+                      type="range"
+                      min="12"
+                      max="72"
+                      value={config.fontSize}
+                      onChange={(value) => setConfig({...config, fontSize: Number(value)})}
+                      style={{ flex: 1 }}
+                    />
+                    <span>{config.fontSize}px</span>
+                  </div>
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    字体颜色
+                  </Form.Label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <input
+                      type="color"
+                      value={config.fontColor}
+                      onChange={(e) => setConfig({...config, fontColor: e.target.value})}
+                      style={{ width: '100%' }}
+                    />
+                    <span>{config.fontColor}</span>
+                  </div>
+                </div>
+                
+                <div className="form-item">
+                  <Form.Label className="label">
+                    当前时间名称
+                  </Form.Label>
+                  <Input
+                    value={config.currentDateName}
+                    onChange={(value) => setConfig({...config, currentDateName: value})}
+                    placeholder="请输入当前时间名称"
+                  />
+                </div>
+              </>
+            )}
+            )}
+          </Form>
+          <Button
+            type="primary"
+            theme="solid"
+            className="btn"
+            onClick={saveConfig}
+          >
+            保存配置
+          </Button>
+        </div>
+      )}
+    </main>
+  );
+}
+
+export default App;
