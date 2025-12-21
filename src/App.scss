@@ -12,7 +12,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 2vmax;
+    padding: 0.5vmax;
     box-sizing: border-box;
     background: linear-gradient(135deg, var(--semi-color-bg-0) 0%, var(--semi-color-bg-1) 100%);
     min-height: 0;
@@ -24,7 +24,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: 2vmax;
+      gap: 1vmax;
       
       .date-text {
         font-size: 10vmax;
