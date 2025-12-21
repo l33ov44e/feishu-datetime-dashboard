@@ -11,11 +11,11 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: clamp(12px, 3vw, 20px);
+    padding: clamp(12px, 2vmin, 24px);
     box-sizing: border-box;
     background: linear-gradient(135deg, var(--semi-color-bg-0) 0%, var(--semi-color-bg-1) 100%);
     min-height: 0;
-    container-type: size;
+    position: relative;
     
     .datetime-container {
       width: 100%;
@@ -24,26 +24,26 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      gap: min(3cqh, 20px);
+      gap: clamp(8px, 2vmin, 20px);
       
       .date-text {
-        font-size: clamp(1.5rem, 12cqmin, 20rem);
-        line-height: 1.2;
+        font-size: clamp(1.5rem, 8vmin, 15vmin);
+        line-height: 1.15;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-        transition: all 0.2s ease;
+        transition: font-size 0.2s ease;
         word-break: break-word;
         max-width: 95%;
         white-space: pre-wrap;
       }
       
       .date-label {
-        font-size: clamp(0.75rem, 3cqmin, 3rem);
-        margin-top: min(1cqh, 10px);
+        font-size: clamp(0.75rem, 2vmin, 4vmin);
+        margin-top: clamp(4px, 1vmin, 12px);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 90%;
-        transition: all 0.2s ease;
+        transition: font-size 0.2s ease;
       }
     }
   }
